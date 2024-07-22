@@ -17,6 +17,8 @@ from packaging.version import Version as PkgVersion
 import torch
 import torch.nn.functional as F
 
+from ..fp8 import get_fp8_te_dtype, FP8GlobalStateManager
+
 import transformer_engine_extensions as tex
 from transformer_engine.pytorch.cpp_extensions import (
     cast_to_fp8,
@@ -3955,7 +3957,8 @@ class DotProductAttention(torch.nn.Module):
                                         cp_stream=self.cp_stream,
                                         max_seqlen_q=max_seqlen_q,
                                         max_seqlen_kv=max_seqlen_kv)
-
+        if FP8GlobalStateManager.get_skip_fp8_weight_update_tensor() is not None:
+            is_first_microbatch = not FP8GlobalStateManager.get_skip_fp8_weight_update_tensor()[0]
         if use_fused_attention:
             if _NVTE_DEBUG:
                 print("[DotProductAttention]: using cuDNN fused attention (backend "
